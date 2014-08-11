@@ -38,6 +38,9 @@ public class Server {
     public void onOpen(Session session){
         System.out.println(session.getId() + " has opened a connection");
         
+//        Requerir un nombre de jugador al iniciar la sesion
+//        Crear metodos JS que modifiquen que segun el JSON identifiquen que partes del html modificar
+        
         Message message = new Message(Json.createObjectBuilder()
             .add("type", "text")
             .add("data", "User has connected")
