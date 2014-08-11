@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.json.Json;
+import javax.websocket.EncodeException;
  
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -19,7 +23,7 @@ import javax.websocket.server.ServerEndpoint;
  * This will be accessed via ws://localhost:8080/WebSocketTest/websocket
  * Where localhost is the address of the host
  */
-@ServerEndpoint("/echo") 
+@ServerEndpoint(value="/echo", encoders = {MessageEncoder.class}, decoders = {MessageDecoder.class}) 
 public class Server {
     
     private static final Set<Session> sessions = Collections.synchronizedSet(new HashSet<Session>());
@@ -33,11 +37,23 @@ public class Server {
     @OnOpen
     public void onOpen(Session session){
         System.out.println(session.getId() + " has opened a connection");
-        sendMessageToAll("User has connected");
+        
+        Message message = new Message(Json.createObjectBuilder()
+            .add("type", "text")
+            .add("data", "User has connected")
+            .build());
+        sendMessageToAll(message);
+        
         try {
-            session.getBasicRemote().sendText("Connection Established");
+            Message connectedMessage = new Message(Json.createObjectBuilder()
+            .add("type", "text")
+            .add("data", "User has connected")
+            .build());
+            session.getBasicRemote().sendObject(connectedMessage);
         } catch (IOException ex) {
             ex.printStackTrace();
+        } catch (EncodeException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
         sessions.add(session);
     }
@@ -47,7 +63,7 @@ public class Server {
      * and allow us to react to it. For now the message is read as a String.
      */
     @OnMessage
-    public void onMessage(String message, Session session){
+    public void onMessage(Message message, Session session){
         System.out.println("Message from " + session.getId() + ": " + message);
         sendMessageToAll(message);
     }
@@ -61,15 +77,21 @@ public class Server {
     public void onClose(Session session){
         sessions.remove(session);
         System.out.println("Session " +session.getId()+" has ended");
-        sendMessageToAll("User has disconnected");
+        Message message = new Message(Json.createObjectBuilder()
+            .add("type", "text")
+            .add("data", "User has disconnected")
+            .build());
+        sendMessageToAll(message);
     }
     
-    private void sendMessageToAll(String message){
+    private void sendMessageToAll(Message message){
         for(Session s : sessions){
             try {
-                s.getBasicRemote().sendText(message);
+                s.getBasicRemote().sendObject(message);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (EncodeException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
