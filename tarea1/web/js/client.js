@@ -19,7 +19,9 @@ function openSocket() {
         // Leave a comment if you know the answer.
         if (event.data === undefined)
             return;
-
+        
+        registerPlayer();
+        $("#playButton").hide();
         writeResponse(event.data);
     };
 
@@ -28,7 +30,7 @@ function openSocket() {
     };
     
     WebSocket.onerror = function(event){
-        console.log(event.data);
+        $("#playButton").show();
     };
 
     webSocket.onclose = function(event) {
@@ -36,24 +38,15 @@ function openSocket() {
     };
 }
 
-function sendImage(){
-    var file = document.getElementById("imageinput").files[0];
-
-    var reader = new FileReader();
-    // Builds a JSON object for the image and sends it
-    var json;
-    reader.onloadend = function(){
-        json = JSON.stringify({
-            "type":"image",
-            "data":reader.result
-        });
-        
+function registerPlayer(){
+    var playerNameInput = $("#playerName");
+    
+    var message = {
+        action: "registerPlayer",
+        data: playerNameInput.value
     };
     
-    // Make sure the file exists and is an image
-    if(file && file.type.match("image")){
-        reader.readAsDataURL(file);
-    }
+    var json = JSON.stringify(message);
     webSocket.send(json);
 }
 
@@ -61,10 +54,13 @@ function sendImage(){
  * Sends the value of the text input to the server
  */
 function sendText(){
-    var json = JSON.stringify({
-        "type":"text",
-        "data":document.getElementById("messageinput").value
-    });
+    
+    var message = {
+        action: "sendChatMessage",
+        data: document.getElementById("messageinput").value
+    };
+    
+    var json = JSON.stringify(message);
     webSocket.send(json);
 }
 
@@ -77,11 +73,11 @@ function writeResponse(json){
     var output;
 
     // Determine the type of message recieved and handle accordingly
-    switch (response.type){
+    switch (response.action){
         case "image":
             output = "<img src=\'" + response.data + "\'/>";
             break;
-        case "text":
+        case "updateChat":
             output = response.data;
             break;
     }

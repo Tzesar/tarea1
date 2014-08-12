@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.websocket.EncodeException;
  
 import javax.websocket.OnClose;
@@ -42,14 +43,14 @@ public class Server {
 //        Crear metodos JS que modifiquen que segun el JSON identifiquen que partes del html modificar
         
         Message message = new Message(Json.createObjectBuilder()
-            .add("type", "text")
+            .add("action", "updateChat")
             .add("data", "User has connected")
             .build());
         sendMessageToAll(message);
         
         try {
             Message connectedMessage = new Message(Json.createObjectBuilder()
-            .add("type", "text")
+            .add("action", "updateChat")
             .add("data", "User has connected")
             .build());
             session.getBasicRemote().sendObject(connectedMessage);
@@ -67,6 +68,11 @@ public class Server {
      */
     @OnMessage
     public void onMessage(Message message, Session session){
+        JsonObject json = message.getJson();
+        
+        String action = json.getString("action");
+//        TODO: falta implementar el switch segun el action
+        
         System.out.println("Message from " + session.getId() + ": " + message);
         sendMessageToAll(message);
     }
@@ -81,7 +87,7 @@ public class Server {
         sessions.remove(session);
         System.out.println("Session " +session.getId()+" has ended");
         Message message = new Message(Json.createObjectBuilder()
-            .add("type", "text")
+            .add("action", "updateChat")
             .add("data", "User has disconnected")
             .build());
         sendMessageToAll(message);

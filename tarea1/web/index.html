@@ -27,6 +27,26 @@
     </head>
 
     <body>
+        <!-- RegisterPlayerModal -->
+        <div class="modal fade" id="registerPlayerModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Register to play</h4>
+              </div>
+              <div class="modal-body">
+                    <div class="input-group">
+                        <input type="text" id="playerName" class="form-control" placeholder="Player name"/>
+                    </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="openSocket()">Save changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Navigation -->
         <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -45,15 +65,12 @@
                 </div>
                 <!-- Collect the nav links, forms, and other content for toggling -->
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                    <ul class="nav navbar-nav">
+                    <ul class="nav navbar-nav navbar-right">
                         <li>
                             <a href="#">About</a>
                         </li>
                         <li>
-                            <a href="#">Services</a>
-                        </li>
-                        <li>
-                            <a href="#">Contact</a>
+                            <button id="playButton" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#registerPlayerModal">Play</button>
                         </li>
                     </ul>
                 </div>
@@ -65,19 +82,26 @@
         <!-- Page Content -->
         <div class="container">
             <div class="row">
-                <div class="col-lg-12">
+                <div class="col-lg-9">
                     <div class="input-group">
                         <input type="text" class="form-control" placeholder="Message" id="messageinput">
                     </div>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-default" onclick="openSocket();">Open</button>
+                        <!--<button type="button" class="btn btn-default" onclick="openSocket();">Open</button>-->
                         <button type="button" class="btn btn-default" onclick="sendText();" >Send</button>
                         <button type="button" class="btn btn-default" onclick="closeSocket();" >Close</button>
                     </div>
                     <!-- Server responses get written here -->
                     <div id="messages"></div>
-
-                    <!-- Script to utilise the WebSocket -->
+                </div>
+                <div class="col-lg-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Players</div>
+                        <div class="panel-body">
+                            <!--The names of available players get shown here-->
+                            <ul class="list-group"></ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
