@@ -4,6 +4,7 @@ package py.una.pol.progweb;
  * @author juan
  */
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -40,7 +41,10 @@ public class Server {
         System.out.println(session.getId() + " has opened a connection");
         
         Player player = new Player(playerName, session);
+        System.out.println("Player " + player.getPlayerName() + " created");
         players.put(session.getId(), player);
+        
+        System.out.println("Player added to map");
         
 //        Crear metodos JS que modifiquen que segun el JSON identifiquen que partes del html modificar
         
@@ -50,6 +54,8 @@ public class Server {
             .add("sessionId", player.getSessionId())
             .build());
         sendMessageToAll(message);
+        
+        System.out.println("Session started");
         
 //        try {
 //            Message connectedMessage = new Message(Json.createObjectBuilder()
@@ -96,12 +102,14 @@ public class Server {
     }
     
     private void sendMessageToAll(Message message){
-        for(Session s : players){
+        for(Player player : players.values()){
             try {
-                s.getBasicRemote().sendObject(message);
+                player.getSession().getBasicRemote().sendObject(message);
             } catch (IOException ex) {
+                System.out.println("Session started");
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             } catch (EncodeException ex) {
+                System.out.println("Session started");
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }

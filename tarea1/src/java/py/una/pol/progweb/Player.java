@@ -21,7 +21,7 @@ public class Player {
     }
 
     public String getPlayerName() {
-        return playerName;
+        return this.playerName;
     }
 
     public void setPlayerName(String playerName) {
@@ -29,7 +29,7 @@ public class Player {
     }
 
     public Session getSession() {
-        return session;
+        return this.session;
     }
 
     public void setSession(Session session) {

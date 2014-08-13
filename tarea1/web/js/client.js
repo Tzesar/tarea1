@@ -1,5 +1,5 @@
 var webSocket;
-var serverLocation = "ws://localhost:8080/tarea1/echo/";
+var serverLocation = "ws://" + window.location.host + "/tarea1/echo/";
 var messages = document.getElementById("messages");
 
 function openSocket() {
@@ -9,29 +9,29 @@ function openSocket() {
         return;
     }
     
-    var playerName = $(playerName);
+    var playerName = $('#playerName');
     
     // Create a new instance of the websocket
-    webSocket = new WebSocket(serverLocation + playerName);
+    webSocket = new WebSocket(serverLocation + playerName.val());
 
     /**
      * Binds functions to the listeners for the websocket.
      */
-    webSocket.onopen = function(event) {
+    webSocket.onopen = function() {
         // For reasons I can't determine, onopen gets called twice
         // and the first time event.data is undefined.
         // Leave a comment if you know the answer.
-        if (event.data === undefined)
-            return;
+//        if (event.data === undefined)
+//            return;
         
-        registerPlayer();
+//        registerPlayer();
         $("#playButton").hide();
-        writeResponse(event.data);
+//        writeResponse(event.data);
     };
 
     webSocket.onmessage = function(event) {
         var message = JSON.parse(event.data);
-        processResponse(message);
+        processMessage(message);
     };
     
     WebSocket.onerror = function(event){
@@ -41,6 +41,29 @@ function openSocket() {
     webSocket.onclose = function(event) {
         messages.innerHTML += "<br/>" + "Connection closed";
     };
+}
+
+function processMessage(message){
+    if(message.action === "updatePlayers"){
+        addOnlinePlayer(message.playerName);
+    }
+}
+
+function addOnlinePlayer(playerName) {
+    var newOnlinePlayer = createOnlineUser(playerName);
+    newOnlinePlayer.appendTo($('#playersList'));
+}
+
+function createOnlineUser(playerName) {
+    var link = $(document.createElement('a'));
+    link.html(playerName);
+    link.attr({id : (playerName + '-player')});
+    link.addClass("list-group-item");
+    link.dblclick(function(){
+        alert("dblclick");
+//        showConversation(userName);
+    });
+    return link;
 }
 
 function registerPlayer(){

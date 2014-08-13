@@ -42,7 +42,9 @@
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="openSocket()">Register</button>
+                <button type="button" class="btn btn-primary" onclick="openSocket()" data-dismiss="modal">
+                    Register
+                </button>
               </div>
             </div>
           </div>
@@ -99,7 +101,7 @@
                         <div class="panel-heading">Players</div>
                         <div class="panel-body">
                             <!--The names of available players get shown here-->
-                            <ul class="list-group"></ul>
+                            <div id="playersList" class="list-group"></div>
                         </div>
                     </div>
                 </div>
