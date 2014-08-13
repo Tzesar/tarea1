@@ -1,4 +1,5 @@
 var webSocket;
+var serverLocation = "ws://localhost:8080/tarea1/echo/";
 var messages = document.getElementById("messages");
 
 function openSocket() {
@@ -7,8 +8,11 @@ function openSocket() {
         writeResponse("WebSocket is already opened.");
         return;
     }
+    
+    var playerName = $(playerName);
+    
     // Create a new instance of the websocket
-    webSocket = new WebSocket("ws://localhost:8080/tarea1/echo");
+    webSocket = new WebSocket(serverLocation + playerName);
 
     /**
      * Binds functions to the listeners for the websocket.
@@ -26,7 +30,8 @@ function openSocket() {
     };
 
     webSocket.onmessage = function(event) {
-        writeResponse(event.data);
+        var message = JSON.parse(event.data);
+        processResponse(message);
     };
     
     WebSocket.onerror = function(event){
