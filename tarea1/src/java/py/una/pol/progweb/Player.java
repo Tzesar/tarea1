@@ -14,6 +14,11 @@ public class Player {
     
     private String playerName;
     private Session session;
+    
+    public Player (String playerName, Session session){
+        this.playerName = playerName;
+        this.session = session;
+    }
 
     public String getPlayerName() {
         return playerName;
@@ -29,5 +34,9 @@ public class Player {
 
     public void setSession(Session session) {
         this.session = session;
+    }
+    
+    public String getSessionId(){
+        return this.session.getId();
     }
 }
