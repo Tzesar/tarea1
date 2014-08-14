@@ -1,30 +1,49 @@
 package py.una.pol.progweb;
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  *
  * @author juan
  */
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
+//import javax.json.Json;
+//import javax.json.JsonArray;
+//import javax.json.JsonArrayBuilder;
+//import javax.json.JsonObject;
+//import javax.json.JsonObjectBuilder;
+import javax.websocket.EncodeException;
  
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
  
 /** 
  * @ServerEndpoint gives the relative name for the end point
  * This will be accessed via ws://localhost:8080/WebSocketTest/websocket
  * Where localhost is the address of the host
  */
-@ServerEndpoint("/echo") 
+@ServerEndpoint(value="/echo/{playerName}", encoders = {MessageEncoder.class}, decoders = {MessageDecoder.class}) 
 public class Server {
+    
+    private static final Map<String, Player> players = new HashMap<String, Player>();
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
+    
     /**
      * @OnOpen allows us to intercept the creation of a new session.
      * The session class allows us to send data to the user.
@@ -32,13 +51,17 @@ public class Server {
      * successful.
      */
     @OnOpen
-    public void onOpen(Session session){
-        System.out.println(session.getId() + " has opened a connection"); 
-        try {
-            session.getBasicRemote().sendText("Connection Established");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+    public void onOpen(Session session, @PathParam("playerName") String playerName ){
+        
+        log.info(session.getId() + " has opened a connection");
+        populatePlayersList(session);
+        Player player = new Player(playerName, session);
+        log.info("Player " + player.getPlayerName() + " created");
+        players.put(session.getId(), player);
+        log.info("Player added to map");
+        log.info("Session started");
+        
+        updatePlayersLists(player, true);
     }
  
     /**
@@ -46,13 +69,14 @@ public class Server {
      * and allow us to react to it. For now the message is read as a String.
      */
     @OnMessage
-    public void onMessage(String message, Session session){
-        System.out.println("Message from " + session.getId() + ": " + message);
-        try {
-            session.getBasicRemote().sendText(message);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+    public void onMessage(Message message, Session session){
+        JsonObject json = message.getJson();
+        
+//        String action = json.getString("action");
+//        TODO: falta implementar el switch segun el action
+        
+        log.info("Message from " + session.getId() + ": " + message);
+        sendMessageToAll(message);
     }
  
     /**
@@ -62,6 +86,78 @@ public class Server {
      */
     @OnClose
     public void onClose(Session session){
-        System.out.println("Session " +session.getId()+" has ended");
+        Player player = players.get(session.getId());
+        updatePlayersLists(player, false);
+        players.remove(session.getId());
+        log.info("Session " + session.getId() + " has ended");
+        log.info("Player " + player.getPlayerName() + " removed from list");
+    }
+    
+    private void sendMessageToAll(Message message){
+        for(Player player : players.values()){
+            try {
+                player.getSession().getBasicRemote().sendObject(message);
+            } catch (IOException ex) {
+                log.error(""+ex);
+            } catch (EncodeException ex) {
+                log.error(""+ex);
+            }
+        }
+    }
+
+    private void populatePlayersList(Session session) {
+        List<String> activePlayers = getActivePlayers();
+        Type jsonObjectType = new TypeToken<List<String>>() {}.getType();
+        Gson gson = new Gson();
+        
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("action", "populatePlayersList");
+        jsonMessage.add("activePlayers", gson.toJsonTree(activePlayers, jsonObjectType) );
+        
+        Message connectedMessage = new Message(jsonMessage);
+        
+        try {
+            session.getBasicRemote().sendObject(connectedMessage);
+        } catch (IOException ex) {
+            log.error(""+ex);
+        } catch (EncodeException ex) {
+            log.error(""+ex);
+        }
+    }
+
+    private List<String> getActivePlayers() {
+        final List<String> activeUsers = new ArrayList<String>();
+        for (Player player : players.values()) {
+            activeUsers.add(player.getPlayerName());
+        }
+        return activeUsers;
+    }
+
+    private void updatePlayersLists(Player player, boolean b) {
+        JsonObject jsonMessage = new JsonObject();
+        
+        jsonMessage.addProperty("action", "updatePlayersList");
+        jsonMessage.addProperty("status", b);
+        jsonMessage.addProperty("playerName", player.getPlayerName());
+        
+        Message updateMessage = new Message(jsonMessage);
+        
+        Set<Session> otherConnectedPlayers = getOtherConnectedPlayers(player);
+        
+        for (Session s : otherConnectedPlayers){
+            try {
+                s.getBasicRemote().sendObject(updateMessage);
+            } catch (IOException ex) {
+                log.error(""+ex);
+            } catch (EncodeException ex) {
+                log.error(""+ex);
+            }
+        }
+    }
+
+    private Set<Session> getOtherConnectedPlayers(Player player) {
+        Set<Session> allConnections = player.getSession().getOpenSessions();
+        allConnections.remove(player.getSession());
+        return allConnections;
     }
 }
