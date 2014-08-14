@@ -129,6 +129,9 @@ function sendText(){
 
 function closeSocket() {
     webSocket.close();
+    $("#tabsOfGames").empty();
+    $("#listOfGames").empty();
+    $("#playersList").empty();
     $("#playButton").show();
     $("#logOutButton").hide();
 }
