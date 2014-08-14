@@ -67,14 +67,50 @@ function createOnlinePlayer(playerName) {
     link.attr({id : (playerName + '-player')});
     link.addClass("list-group-item player");
     link.dblclick(function(){
-        alert("dblclick");
-//        showConversation(userName);
+        createGameTab(playerName);
     });
     return link;
 }
 
 function removeOnLinePlayer(playerName) {
     $('#' + playerName + '-player').remove();
+}
+
+function createGameTab(playerName) {
+//    <li id="playerName-game-link" class="active"><a href="#playerName-game" role="tab" data-toggle="tab">PlayerName</a></li>
+//    <div class="tab-pane active" id="playerName-game"></div>
+    var link = $(document.createElement('li'));
+    var a = $(document.createElement('a'));
+    var tab = $(document.createElement('div'));
+    
+    a.attr({href : "#" + playerName + "-game", role : "tab"});
+    a.attr("data-toggle","tab");
+    a.html(playerName);
+    
+    link.attr({id: playerName + "-game-link"});
+    
+    tab.attr({id: playerName + "-game"});
+    tab.attr("class", "tab-pane");
+    
+    a.appendTo(link);
+    link.appendTo($("#listOfGames"));
+    
+    //    Si no existe ningun juego se marca al juego nuevo como activo
+    if (isEmpty($("#tabsOfGames"))){
+        link.attr("class", "active");
+        tab.attr("class", "active");
+    }
+    
+    tab.appendTo($("#tabsOfGames"));
+    
+    $('#'+ playerName +'-game a').click(function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
+}
+
+function isEmpty( el ){
+    return !$.trim(el.html()).length;
 }
 
 /**

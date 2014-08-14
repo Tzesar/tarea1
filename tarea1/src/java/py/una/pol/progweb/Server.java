@@ -78,12 +78,7 @@ public class Server {
         log.info("Message from " + session.getId() + ": " + message);
         sendMessageToAll(message);
     }
- 
-    /**
-     * The user closes the connection.
-     * 
-     * Note: you can't send messages to the client from this method
-     */
+    
     @OnClose
     public void onClose(Session session){
         Player player = players.get(session.getId());
@@ -94,6 +89,9 @@ public class Server {
     }
     
     private void sendMessageToAll(Message message){
+        /*
+         * Metodo que envia un mensaje a todos los jugadores.
+         */
         for(Player player : players.values()){
             try {
                 player.getSession().getBasicRemote().sendObject(message);
@@ -106,6 +104,10 @@ public class Server {
     }
 
     private void populatePlayersList(Session session) {
+        /*
+         * Metodo que envia un mensaje a un nuevo jugador. El mensaje contiene
+         * una lista de todos los jugadores conectados.
+         */
         List<String> activePlayers = getActivePlayers();
         Type jsonObjectType = new TypeToken<List<String>>() {}.getType();
         Gson gson = new Gson();
@@ -134,6 +136,12 @@ public class Server {
     }
 
     private void updatePlayersLists(Player player, boolean b) {
+        /*
+         * Metodo que envia un mensaje a todos los demas jugadores cuando existe 
+         * una modificacion en el estado de la conexion de un jugador.
+         * El atributo booleano status del mensaje indica si el jugador se conecta o se desconecta.
+         */
+        
         JsonObject jsonMessage = new JsonObject();
         
         jsonMessage.addProperty("action", "updatePlayersList");
