@@ -9,24 +9,18 @@ function openSocket() {
         return;
     }
     
-    var playerName = $('#playerName');
+    var playerName = $('#playerName').val();
     
     // Create a new instance of the websocket
-    webSocket = new WebSocket(serverLocation + playerName.val());
+    webSocket = new WebSocket(serverLocation + playerName);
 
     /**
      * Binds functions to the listeners for the websocket.
      */
     webSocket.onopen = function() {
-        // For reasons I can't determine, onopen gets called twice
-        // and the first time event.data is undefined.
-        // Leave a comment if you know the answer.
-//        if (event.data === undefined)
-//            return;
-        
-//        registerPlayer();
+        $("#playerNameLabel").html(playerName);
         $("#playButton").hide();
-//        writeResponse(event.data);
+        $("#logOutButton").show();
     };
 
     webSocket.onmessage = function(event) {
@@ -40,25 +34,38 @@ function openSocket() {
 
     webSocket.onclose = function(event) {
         messages.innerHTML += "<br/>" + "Connection closed";
+        $('.player').remove();
+        $('#playerNameLabel').html("");
     };
 }
 
 function processMessage(message){
     if(message.action === "updatePlayers"){
         addOnlinePlayer(message.playerName);
+    } else if (message.action === "populatePlayersList"){
+        var activePlayers = message.activePlayers;
+        for (var i=0; i<activePlayers.length; i++) {
+            addOnlinePlayer(activePlayers[i]);
+        }
+    } else if (message.action === "updatePlayersList"){
+        if (message.status){
+            addOnlinePlayer(message.playerName);
+        } else{
+            removeOnLinePlayer(message.playerName);
+        }
     }
 }
 
 function addOnlinePlayer(playerName) {
-    var newOnlinePlayer = createOnlineUser(playerName);
+    var newOnlinePlayer = createOnlinePlayer(playerName);
     newOnlinePlayer.appendTo($('#playersList'));
 }
 
-function createOnlineUser(playerName) {
+function createOnlinePlayer(playerName) {
     var link = $(document.createElement('a'));
     link.html(playerName);
     link.attr({id : (playerName + '-player')});
-    link.addClass("list-group-item");
+    link.addClass("list-group-item player");
     link.dblclick(function(){
         alert("dblclick");
 //        showConversation(userName);
@@ -66,16 +73,8 @@ function createOnlineUser(playerName) {
     return link;
 }
 
-function registerPlayer(){
-    var playerNameInput = $("#playerName");
-    
-    var message = {
-        action: "registerPlayer",
-        data: playerNameInput.value
-    };
-    
-    var json = JSON.stringify(message);
-    webSocket.send(json);
+function removeOnLinePlayer(playerName) {
+    $('#' + playerName + '-player').remove();
 }
 
 /**
@@ -94,6 +93,8 @@ function sendText(){
 
 function closeSocket() {
     webSocket.close();
+    $("#playButton").show();
+    $("#logOutButton").hide();
 }
 
 function writeResponse(json){

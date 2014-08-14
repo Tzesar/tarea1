@@ -8,11 +8,14 @@ package py.una.pol.progweb;
  *
  * @author augusto
  */
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import java.io.StringWriter;
-import javax.json.Json;
-import javax.json.JsonObject;
+//import javax.json.Json;
+//import javax.json.JsonObject;
  
 public class Message {
+//    private JsonObject json;
     private JsonObject json;
  
     public Message(JsonObject json) {
@@ -29,11 +32,12 @@ public class Message {
  
     @Override
     public String toString(){
-        StringWriter writer = new StringWriter();
+//        StringWriter writer = new StringWriter();
  
-        Json.createWriter(writer).write(json);
+//        Json.createWriter(writer).write(json);
+        return this.json.toString();
  
-        return writer.toString();
+//        return writer.toString();
     }
  
 }

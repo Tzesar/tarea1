@@ -3,14 +3,25 @@ package py.una.pol.progweb;
  *
  * @author juan
  */
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
-import java.util.Collections;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.json.Json;
-import javax.json.JsonObject;
+import java.util.Set;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
+//import javax.json.Json;
+//import javax.json.JsonArray;
+//import javax.json.JsonArrayBuilder;
+//import javax.json.JsonObject;
+//import javax.json.JsonObjectBuilder;
 import javax.websocket.EncodeException;
  
 import javax.websocket.OnClose;
@@ -19,6 +30,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
  
 /** 
  * @ServerEndpoint gives the relative name for the end point
@@ -29,6 +42,7 @@ import javax.websocket.server.ServerEndpoint;
 public class Server {
     
     private static final Map<String, Player> players = new HashMap<String, Player>();
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
     
     /**
      * @OnOpen allows us to intercept the creation of a new session.
@@ -38,36 +52,16 @@ public class Server {
      */
     @OnOpen
     public void onOpen(Session session, @PathParam("playerName") String playerName ){
-        System.out.println(session.getId() + " has opened a connection");
         
+        log.info(session.getId() + " has opened a connection");
+        populatePlayersList(session);
         Player player = new Player(playerName, session);
-        System.out.println("Player " + player.getPlayerName() + " created");
+        log.info("Player " + player.getPlayerName() + " created");
         players.put(session.getId(), player);
+        log.info("Player added to map");
+        log.info("Session started");
         
-        System.out.println("Player added to map");
-        
-//        Crear metodos JS que modifiquen que segun el JSON identifiquen que partes del html modificar
-        
-        Message message = new Message(Json.createObjectBuilder()
-            .add("action", "updatePlayers")
-            .add("playerName", player.getPlayerName())
-            .add("sessionId", player.getSessionId())
-            .build());
-        sendMessageToAll(message);
-        
-        System.out.println("Session started");
-        
-//        try {
-//            Message connectedMessage = new Message(Json.createObjectBuilder()
-//            .add("action", "updateChat")
-//            .add("data", "User has connected")
-//            .build());
-//            session.getBasicRemote().sendObject(connectedMessage);
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        } catch (EncodeException ex) {
-//            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-//        }
+        updatePlayersLists(player, true);
     }
  
     /**
@@ -78,10 +72,10 @@ public class Server {
     public void onMessage(Message message, Session session){
         JsonObject json = message.getJson();
         
-        String action = json.getString("action");
+//        String action = json.getString("action");
 //        TODO: falta implementar el switch segun el action
         
-        System.out.println("Message from " + session.getId() + ": " + message);
+        log.info("Message from " + session.getId() + ": " + message);
         sendMessageToAll(message);
     }
  
@@ -92,13 +86,11 @@ public class Server {
      */
     @OnClose
     public void onClose(Session session){
-        players.remove(session);
-        System.out.println("Session " +session.getId()+" has ended");
-        Message message = new Message(Json.createObjectBuilder()
-            .add("action", "updateChat")
-            .add("data", "User has disconnected")
-            .build());
-        sendMessageToAll(message);
+        Player player = players.get(session.getId());
+        updatePlayersLists(player, false);
+        players.remove(session.getId());
+        log.info("Session " + session.getId() + " has ended");
+        log.info("Player " + player.getPlayerName() + " removed from list");
     }
     
     private void sendMessageToAll(Message message){
@@ -106,12 +98,66 @@ public class Server {
             try {
                 player.getSession().getBasicRemote().sendObject(message);
             } catch (IOException ex) {
-                System.out.println("Session started");
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                log.error(""+ex);
             } catch (EncodeException ex) {
-                System.out.println("Session started");
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                log.error(""+ex);
             }
         }
+    }
+
+    private void populatePlayersList(Session session) {
+        List<String> activePlayers = getActivePlayers();
+        Type jsonObjectType = new TypeToken<List<String>>() {}.getType();
+        Gson gson = new Gson();
+        
+        JsonObject jsonMessage = new JsonObject();
+        jsonMessage.addProperty("action", "populatePlayersList");
+        jsonMessage.add("activePlayers", gson.toJsonTree(activePlayers, jsonObjectType) );
+        
+        Message connectedMessage = new Message(jsonMessage);
+        
+        try {
+            session.getBasicRemote().sendObject(connectedMessage);
+        } catch (IOException ex) {
+            log.error(""+ex);
+        } catch (EncodeException ex) {
+            log.error(""+ex);
+        }
+    }
+
+    private List<String> getActivePlayers() {
+        final List<String> activeUsers = new ArrayList<String>();
+        for (Player player : players.values()) {
+            activeUsers.add(player.getPlayerName());
+        }
+        return activeUsers;
+    }
+
+    private void updatePlayersLists(Player player, boolean b) {
+        JsonObject jsonMessage = new JsonObject();
+        
+        jsonMessage.addProperty("action", "updatePlayersList");
+        jsonMessage.addProperty("status", b);
+        jsonMessage.addProperty("playerName", player.getPlayerName());
+        
+        Message updateMessage = new Message(jsonMessage);
+        
+        Set<Session> otherConnectedPlayers = getOtherConnectedPlayers(player);
+        
+        for (Session s : otherConnectedPlayers){
+            try {
+                s.getBasicRemote().sendObject(updateMessage);
+            } catch (IOException ex) {
+                log.error(""+ex);
+            } catch (EncodeException ex) {
+                log.error(""+ex);
+            }
+        }
+    }
+
+    private Set<Session> getOtherConnectedPlayers(Player player) {
+        Set<Session> allConnections = player.getSession().getOpenSessions();
+        allConnections.remove(player.getSession());
+        return allConnections;
     }
 }

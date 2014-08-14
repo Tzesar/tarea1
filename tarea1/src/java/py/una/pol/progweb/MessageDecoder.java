@@ -1,9 +1,15 @@
 package py.una.pol.progweb;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import java.io.StringReader;
+import java.lang.reflect.Type;
 import javax.json.Json;
 import javax.json.JsonException;
-import javax.json.JsonObject;
+//import javax.json.Json;
+//import javax.json.JsonException;
+//import javax.json.JsonObject;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -19,7 +25,10 @@ public class MessageDecoder implements Decoder.Text<Message>{
      */
     @Override
     public Message decode(String string) throws DecodeException {
-        JsonObject json = Json.createReader(new StringReader(string)).readObject();
+//        JsonObject json = Json.createReader(new StringReader(string)).readObject();
+        Gson gson = new Gson();
+        Type jsonObjectType = new TypeToken<JsonObject>() {}.getType();
+        JsonObject json = gson.fromJson(string, jsonObjectType);
         return new Message(json);
     }
  
@@ -30,7 +39,9 @@ public class MessageDecoder implements Decoder.Text<Message>{
     @Override
     public boolean willDecode(String string) {
         try{
-            Json.createReader(new StringReader(string)).read();
+            Gson gson = new Gson();
+            Type jsonObjectType = new TypeToken<JsonObject>() {}.getType();
+            JsonObject json = gson.fromJson(string, jsonObjectType);
             return true;
         }catch (JsonException ex){
             System.err.println(ex.toString());
