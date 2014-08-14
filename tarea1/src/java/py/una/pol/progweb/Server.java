@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @ServerEndpoint(value="/echo/{playerName}", encoders = {MessageEncoder.class}, decoders = {MessageDecoder.class}) 
 public class Server {
     
-    private static final Map<String, Player> players = new HashMap<String, Player>();
+    private static final Map<String, Player> players = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
     private static final Logger log = LoggerFactory.getLogger(Server.class);
     
     /**
@@ -58,6 +59,7 @@ public class Server {
         Player player = new Player(playerName, session);
         log.info("Player " + player.getPlayerName() + " created");
         players.put(session.getId(), player);
+        players.put(player.getPlayerName(), player);
         log.info("Player added to map");
         log.info("Session started");
         
@@ -78,12 +80,7 @@ public class Server {
         log.info("Message from " + session.getId() + ": " + message);
         sendMessageToAll(message);
     }
- 
-    /**
-     * The user closes the connection.
-     * 
-     * Note: you can't send messages to the client from this method
-     */
+    
     @OnClose
     public void onClose(Session session){
         Player player = players.get(session.getId());
@@ -94,6 +91,9 @@ public class Server {
     }
     
     private void sendMessageToAll(Message message){
+        /*
+         * Metodo que envia un mensaje a todos los jugadores.
+         */
         for(Player player : players.values()){
             try {
                 player.getSession().getBasicRemote().sendObject(message);
@@ -106,6 +106,10 @@ public class Server {
     }
 
     private void populatePlayersList(Session session) {
+        /*
+         * Metodo que envia un mensaje a un nuevo jugador. El mensaje contiene
+         * una lista de todos los jugadores conectados.
+         */
         List<String> activePlayers = getActivePlayers();
         Type jsonObjectType = new TypeToken<List<String>>() {}.getType();
         Gson gson = new Gson();
@@ -134,6 +138,12 @@ public class Server {
     }
 
     private void updatePlayersLists(Player player, boolean b) {
+        /*
+         * Metodo que envia un mensaje a todos los demas jugadores cuando existe 
+         * una modificacion en el estado de la conexion de un jugador.
+         * El atributo booleano status del mensaje indica si el jugador se conecta o se desconecta.
+         */
+        
         JsonObject jsonMessage = new JsonObject();
         
         jsonMessage.addProperty("action", "updatePlayersList");
