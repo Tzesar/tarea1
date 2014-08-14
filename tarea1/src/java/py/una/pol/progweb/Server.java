@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @ServerEndpoint(value="/echo/{playerName}", encoders = {MessageEncoder.class}, decoders = {MessageDecoder.class}) 
 public class Server {
     
-    private static final Map<String, Player> players = new HashMap<String, Player>();
+    private static final Map<String, Player> players = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
     private static final Logger log = LoggerFactory.getLogger(Server.class);
     
     /**
@@ -58,6 +59,7 @@ public class Server {
         Player player = new Player(playerName, session);
         log.info("Player " + player.getPlayerName() + " created");
         players.put(session.getId(), player);
+        players.put(player.getPlayerName(), player);
         log.info("Player added to map");
         log.info("Session started");
         
