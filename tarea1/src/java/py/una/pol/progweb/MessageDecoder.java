@@ -3,16 +3,14 @@ package py.una.pol.progweb;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import java.io.StringReader;
+
 import java.lang.reflect.Type;
-import javax.json.Json;
+
 import javax.json.JsonException;
-//import javax.json.Json;
-//import javax.json.JsonException;
-//import javax.json.JsonObject;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

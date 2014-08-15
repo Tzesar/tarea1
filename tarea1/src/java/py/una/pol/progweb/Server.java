@@ -4,33 +4,27 @@ package py.una.pol.progweb;
  * @author juan
  */
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-//import java.util.logging.Level;
-//import java.util.logging.Logger;
-//import javax.json.Json;
-//import javax.json.JsonArray;
-//import javax.json.JsonArrayBuilder;
-//import javax.json.JsonObject;
-//import javax.json.JsonObjectBuilder;
-import javax.websocket.EncodeException;
- 
+import java.util.UUID;
+
+import javax.websocket.EncodeException; 
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
  
@@ -44,6 +38,7 @@ public class Server {
     
     private static final Map<String, Player> playersBySession = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
     private static final Map<String, Player> playersByName = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
+    private static final Map<UUID, Game> gamesByUUID = Collections.synchronizedMap(new HashMap<UUID, Game>(50, (float)0.90));
     private static final Logger log = LoggerFactory.getLogger(Server.class);
     
     /**
@@ -74,17 +69,57 @@ public class Server {
     @OnMessage
     public void onMessage(Message message, Session session){
         JsonObject json = message.getJson();
-        Integer actionCode = Integer.parseInt(json.get("actionCode").toString());
+        int actionCode = json.get("actionCode").getAsInt();
+//        String actionCodeString = json.get("actionCode").toString();
+//        try {
+//            actionCode = Integer.parseInt(actionCodeString);
+//        }catch(NumberFormatException e){
+//            log.error("Parse Int: " + e);
+//        }
+        Player player = playersBySession.get(session.getId());
         
-//        String action = json.getString("action");
-//        TODO: falta implementar el switch segun el action
+//        actionCodes
+//        1 - New game
+//        2 - Game started
+        log.info("Message from " + player.getPlayerName() + "["+ session.getId() +"]" + ": " + message);
         switch(actionCode){
             case 1:
+                Game game = new Game(player.getPlayerName(), json.get("opponent").toString());
+                gamesByUUID.put(game.getGameId(), game);
+                Player opponent = playersByName.get(json.get("opponent").toString());
+                
+                JsonObject jsonMessage = new JsonObject();
+                jsonMessage.addProperty("action", "gameStarted");
+                jsonMessage.addProperty("actionCode", 2);
+                jsonMessage.addProperty("gameId", game.getGameId().toString());
+                jsonMessage.addProperty("opponent", opponent.getPlayerName());
+                
+                Message responseMessage = new Message(jsonMessage);
+                try {
+                    session.getBasicRemote().sendObject(responseMessage);
+                    log.info("Response message to " + player.getPlayerName() + ": " + responseMessage);
+                } catch (IOException ex) {
+                    log.error(""+ex);
+                } catch (EncodeException ex) {
+                    log.error(""+ex);
+                }
+
+//                    Changes the name of the player, to inform the opponent as well
+                jsonMessage.remove("opponent");
+                jsonMessage.addProperty("opponent", player.getPlayerName());
+                responseMessage = new Message(jsonMessage);
+                try {
+                    opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                    log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                } catch (IOException ex) {
+                    log.error(""+ex);
+                } catch (EncodeException ex) {
+                    log.error(""+ex);
+                }
                 
                 break;
         }
-        Player player = playersBySession.get(session.getId());
-        log.info("Message from " + player.getPlayerName() + ": " + message);
+        
 //        sendMessageToAll(message);
     }
     

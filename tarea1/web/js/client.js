@@ -2,14 +2,9 @@ var webSocket;
 var serverLocation = "ws://" + window.location.host + "/tarea1/echo/";
 var messages = document.getElementById("messages");
 
-//function (){
-//    $(document).ready(function(){
-//        $('#registerButton').keypress(function(e){
-//          if(e.keyCode === 13)
-//          $('#registerButton').click();
-//        });
-//    });
-//};
+//    actionCodes
+//    1 - Create new game
+//    2 = New move
 
 
 function openSocket() {
@@ -63,6 +58,8 @@ function processMessage(message){
         } else{
             removeOnLinePlayer(message.playerName);
         }
+    } else if (message.action === "gameStarted"){
+        createGameTab(message.gameId, message.opponent);
     }
 }
 
@@ -83,8 +80,9 @@ function createOnlinePlayer(playerName) {
             actionCode : "1",
             opponent : playerName
         };
-        webSocket.send(JSON.stringify(message));
-//        createGameTab(playerName);
+        var json = JSON.stringify(message);
+        webSocket.send(json);
+        alert("mensajeEnviado");
     });
     return link;
 }
@@ -93,7 +91,7 @@ function removeOnLinePlayer(playerName) {
     $('#' + playerName + '-player').remove();
 }
 
-function createGameTab(gameId) {
+function createGameTab(gameId, opponent) {
 //    <li id="playerName-game-link" class="active"><a href="#playerName-game" role="tab" data-toggle="tab">PlayerName</a></li>
 //    <div class="tab-pane active" id="playerName-game"></div>
     var link = $(document.createElement('li'));
@@ -108,7 +106,7 @@ function createGameTab(gameId) {
     
     a.attr({href : "#" + gameId + "-game", role : "tab"});
     a.attr("data-toggle","tab");
-    a.append(gameId);
+    a.append(opponent);
     
     link.attr({id: gameId + "-game-link"});
     

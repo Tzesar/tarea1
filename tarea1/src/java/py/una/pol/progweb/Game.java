@@ -4,6 +4,8 @@
  */
 package py.una.pol.progweb;
 
+import java.util.UUID;
+
 /**
  *
  * @author augusto
@@ -11,9 +13,13 @@ package py.una.pol.progweb;
 public class Game {
     private String playerName1;
     private String playerName2;
-    private Integer gameId;
+    private UUID gameId;
     
-    
+    public Game(String playerName1, String playerName2){
+        this.playerName1 = playerName1;
+        this.playerName2 = playerName2;
+        this.gameId = UUID.randomUUID();
+    }
 
     public String getPlayerName1() {
         return playerName1;
@@ -31,11 +37,7 @@ public class Game {
         this.playerName2 = playerName2;
     }
 
-    public Integer getGameId() {
+    public UUID getGameId() {
         return gameId;
-    }
-
-    public void setGameId(Integer gameId) {
-        this.gameId = gameId;
     }
 }
