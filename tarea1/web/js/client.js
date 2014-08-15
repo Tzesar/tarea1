@@ -153,7 +153,7 @@ function createTicTacToeBoard(gameId){
         row = $(document.createElement("tr"));
         board.append(row);
         for (j = 0; j < 3; j += 1) {
-            addCell(indicator, row);
+            addCell(indicator, row, gameId);
             indicator += indicator;
         }
     }
@@ -161,14 +161,13 @@ function createTicTacToeBoard(gameId){
     return board;
 }
 
-function addCell(indicator, row){
-    var newCell = createNewCell(indicator);
+function addCell(indicator, row, gameId){
+    var newCell = createNewCell(indicator, gameId);
     newCell.appendTo(row);
 }
 
-function createNewCell(indicator){
+function createNewCell(indicator, gameId){
     var cell = $(document.createElement("td"));
-    var gameId = "s";
             
     cell.attr({height: "50", valign: "center"});
     cell.attr("id", gameId+"-"+indicator);
