@@ -77,7 +77,11 @@ function processMessage(message){
         
         alert("Ha ganado la partida");
     } else if(message.action === "tiedBoring"){
+        var cell = $("#"+ message.gameId +"-"+message.indicator);
+        cell.closest("div").attr("turn", "false");
+        cell.html("O");
         
+        alert("Has empatado la partida. Esto es un tanto decepcionante.");
     }
 }
 
@@ -91,7 +95,7 @@ function createOnlinePlayer(playerName) {
     link.html(playerName);
     link.attr({id : (playerName + '-player')});
     link.addClass("list-group-item player");
-    link.dblclick(function(){
+    link.click(function(){
 //        Enviar mensaje para iniciar el juego, el servidor devuelve el ID del nuevo juego
         var message = {
             action : "startNewGame",
@@ -151,7 +155,7 @@ function createGameTab(message) {
     
     $("div .active").removeClass("active");
     $("li .active").removeClass("active");
-    $(tab+" a:last").tab("show");
+    $(gameId+" a:last").tab("show");
     
     $('#'+ gameId +' a').click(function (e) {
         e.preventDefault();
