@@ -42,7 +42,8 @@ import org.slf4j.LoggerFactory;
 @ServerEndpoint(value="/echo/{playerName}", encoders = {MessageEncoder.class}, decoders = {MessageDecoder.class}) 
 public class Server {
     
-    private static final Map<String, Player> players = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
+    private static final Map<String, Player> playersBySession = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
+    private static final Map<String, Player> playersByName = Collections.synchronizedMap(new HashMap<String, Player>(10, (float)0.90));
     private static final Logger log = LoggerFactory.getLogger(Server.class);
     
     /**
@@ -58,8 +59,8 @@ public class Server {
         populatePlayersList(session);
         Player player = new Player(playerName, session);
         log.info("Player " + player.getPlayerName() + " created");
-        players.put(session.getId(), player);
-        players.put(player.getPlayerName(), player);
+        playersBySession.put(session.getId(), player);
+        playersByName.put(player.getPlayerName(), player);
         log.info("Player added to map");
         log.info("Session started");
         
@@ -83,9 +84,9 @@ public class Server {
     
     @OnClose
     public void onClose(Session session){
-        Player player = players.get(session.getId());
+        Player player = playersBySession.get(session.getId());
         updatePlayersLists(player, false);
-        players.remove(session.getId());
+        playersBySession.remove(session.getId());
         log.info("Session " + session.getId() + " has ended");
         log.info("Player " + player.getPlayerName() + " removed from list");
     }
@@ -94,7 +95,7 @@ public class Server {
         /*
          * Metodo que envia un mensaje a todos los jugadores.
          */
-        for(Player player : players.values()){
+        for(Player player : playersBySession.values()){
             try {
                 player.getSession().getBasicRemote().sendObject(message);
             } catch (IOException ex) {
@@ -131,7 +132,7 @@ public class Server {
 
     private List<String> getActivePlayers() {
         final List<String> activeUsers = new ArrayList<String>();
-        for (Player player : players.values()) {
+        for (Player player : playersBySession.values()) {
             activeUsers.add(player.getPlayerName());
         }
         return activeUsers;

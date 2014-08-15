@@ -2,6 +2,16 @@ var webSocket;
 var serverLocation = "ws://" + window.location.host + "/tarea1/echo/";
 var messages = document.getElementById("messages");
 
+//function (){
+//    $(document).ready(function(){
+//        $('#registerButton').keypress(function(e){
+//          if(e.keyCode === 13)
+//          $('#registerButton').click();
+//        });
+//    });
+//};
+
+
 function openSocket() {
     // Ensures only one connection is open at a time
     if (webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED) {
@@ -67,6 +77,7 @@ function createOnlinePlayer(playerName) {
     link.attr({id : (playerName + '-player')});
     link.addClass("list-group-item player");
     link.dblclick(function(){
+//        Enviar mensaje para iniciar el juego, el servidor devuelve el ID del nuevo juego
         createGameTab(playerName);
     });
     return link;
@@ -76,34 +87,44 @@ function removeOnLinePlayer(playerName) {
     $('#' + playerName + '-player').remove();
 }
 
-function createGameTab(playerName) {
+function createGameTab(gameId) {
 //    <li id="playerName-game-link" class="active"><a href="#playerName-game" role="tab" data-toggle="tab">PlayerName</a></li>
 //    <div class="tab-pane active" id="playerName-game"></div>
     var link = $(document.createElement('li'));
     var a = $(document.createElement('a'));
+    var closeButton = $(document.createElement('button'));
     var tab = $(document.createElement('div'));
+
+    closeButton.attr("type", "button");
+    closeButton.attr("class", "close closeTab");
+    closeButton.html('x');
+    closeButton.appendTo(a);
     
-    a.attr({href : "#" + playerName + "-game", role : "tab"});
+    a.attr({href : "#" + gameId + "-game", role : "tab"});
     a.attr("data-toggle","tab");
-    a.html(playerName);
+    a.append(gameId);
     
-    link.attr({id: playerName + "-game-link"});
+    link.attr({id: gameId + "-game-link"});
     
-    tab.attr({id: playerName + "-game"});
-    tab.attr("class", "tab-pane");
+    tab.attr({id: gameId + "-game"});
+    tab.attr("class", "tab-pane game");
     
     a.appendTo(link);
     link.appendTo($("#listOfGames"));
     
-    //    Si no existe ningun juego se marca al juego nuevo como activo
+//        Si no existe ningun juego se marca al juego nuevo como activo
     if (isEmpty($("#tabsOfGames"))){
         link.attr("class", "active");
-        tab.attr("class", "active");
+        tab.attr("class", "active game");
     }
+    
+    var ticTacToeBoard = createTicTacToeBoard(gameId);
+    
+    tab.append(ticTacToeBoard);
     
     tab.appendTo($("#tabsOfGames"));
     
-    $('#'+ playerName +'-game a').click(function (e) {
+    $('#'+ gameId +'-game a').click(function (e) {
         e.preventDefault();
         $(this).tab('show');
     });
@@ -111,6 +132,75 @@ function createGameTab(playerName) {
 
 function isEmpty( el ){
     return !$.trim(el.html()).length;
+}
+
+function createTicTacToeBoard(gameId){
+//    var container = $(document.createElement("div"));
+//    var padLeft = $(document.createElement("div"));
+//    var padRight = $(document.createElement("div"));
+    var board = $(document.createElement("table"));
+    var indicator = 1;
+    var i;
+    var j;
+    var row;
+    var cell;
+    var parent;
+    
+//    padLeft.attr("class", "col-lg-4");
+    board.attr("border", "1");
+    board.attr("class", "table");
+    for (i = 0; i < 3; i += 1) {
+        row = $(document.createElement("tr"));
+        board.append(row);
+        for (j = 0; j < 3; j += 1) {
+            addCell(indicator, row);
+            indicator += indicator;
+        }
+    }
+    
+    return board;
+}
+
+function addCell(indicator, row){
+    var newCell = createNewCell(indicator);
+    newCell.appendTo(row);
+}
+
+function createNewCell(indicator){
+    var cell = $(document.createElement("td"));
+    var gameId = "s";
+            
+    cell.attr({height: "50", valign: "center"});
+    cell.attr("id", gameId+"-"+indicator);
+    cell.attr("indicator", indicator);
+    cell.click( function(){
+        set(gameId+"-"+indicator);
+    });
+    cell.append("");
+    
+    return cell;
+}
+
+function set(cellId){
+    var turn = "X";
+    var cell = $("#"+cellId);
+    
+    if(!isEmpty(cell)){
+        alert("notEmpty");
+        return;
+    }
+    cell.html(turn);
+//    moves += 1;
+//    score[turn] += this.indicator;
+//    if (win(score[turn])) {
+//        alert(turn + " wins!");
+//        startNewGame();
+//    } else if (moves === 9) {
+//        alert("Cat\u2019s game!");
+//        startNewGame();
+//    } else {
+        turn = turn === "X" ? "O" : "X";
+//    }
 }
 
 /**
