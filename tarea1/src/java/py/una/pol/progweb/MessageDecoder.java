@@ -3,16 +3,16 @@ package py.una.pol.progweb;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import java.io.StringReader;
+
 import java.lang.reflect.Type;
-import javax.json.Json;
+
 import javax.json.JsonException;
-//import javax.json.Json;
-//import javax.json.JsonException;
-//import javax.json.JsonObject;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -20,6 +20,8 @@ import javax.websocket.EndpointConfig;
  * Decodes a client-sent string into a Message class
  */
 public class MessageDecoder implements Decoder.Text<Message>{
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
+    
     /**
      * Transform the input string into a Message
      */
@@ -44,7 +46,7 @@ public class MessageDecoder implements Decoder.Text<Message>{
             JsonObject json = gson.fromJson(string, jsonObjectType);
             return true;
         }catch (JsonException ex){
-            System.err.println(ex.toString());
+            log.error(ex.toString());
             return false;
         }
     }
@@ -55,11 +57,11 @@ public class MessageDecoder implements Decoder.Text<Message>{
      */
     @Override
     public void init(EndpointConfig config) {
-        System.out.println("init");
+        log.info("init");
     }
     @Override
     public void destroy() {
-        System.out.println("destroy");
+        log.info("destroy");
     }
  
 }
