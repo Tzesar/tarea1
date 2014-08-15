@@ -69,32 +69,49 @@ public class Server {
     @OnMessage
     public void onMessage(Message message, Session session){
         JsonObject json = message.getJson();
-        int actionCode = json.get("actionCode").getAsInt();
+        Game game;
+        JsonObject jsonMessage;
+        Message responseMessage;
+        Player opponent;
+        
+        int actionCode = 0;
 //        String actionCodeString = json.get("actionCode").toString();
-//        try {
+        try {
 //            actionCode = Integer.parseInt(actionCodeString);
-//        }catch(NumberFormatException e){
-//            log.error("Parse Int: " + e);
-//        }
+            actionCode = json.get("actionCode").getAsInt();
+        }catch(ClassCastException e){
+            log.error("getAsInt: " + e);
+        }catch(IllegalStateException e){
+            log.error("getAsInt: " + e);
+        }
         Player player = playersBySession.get(session.getId());
         
 //        actionCodes
 //        1 - New game
 //        2 - Game started
-        log.info("Message from " + player.getPlayerName() + "["+ session.getId() +"]" + ": " + message);
+//        3 - NewMove
+//        4 - youLose
+//        5 - youWon
+//        6 - TiedBoring
+        log.info("Message from " + player.getPlayerName() + "["+ session.getId() +"]" + ": " + message + " code["+actionCode+"]");
         switch(actionCode){
             case 1:
-                Game game = new Game(player.getPlayerName(), json.get("opponent").toString());
+                game = new Game(player.getPlayerName(), json.get("opponent").getAsString());
                 gamesByUUID.put(game.getGameId(), game);
-                Player opponent = playersByName.get(json.get("opponent").toString());
                 
-                JsonObject jsonMessage = new JsonObject();
+                opponent = playersByName.get(json.get("opponent").getAsString());
+                jsonMessage = new JsonObject();
                 jsonMessage.addProperty("action", "gameStarted");
                 jsonMessage.addProperty("actionCode", 2);
                 jsonMessage.addProperty("gameId", game.getGameId().toString());
                 jsonMessage.addProperty("opponent", opponent.getPlayerName());
+                if (game.getTurn() == 2){
+                    jsonMessage.addProperty("turn", true);
+                }else{
+                    jsonMessage.addProperty("turn", false);
+                }
                 
-                Message responseMessage = new Message(jsonMessage);
+                responseMessage = new Message(jsonMessage);
                 try {
                     session.getBasicRemote().sendObject(responseMessage);
                     log.info("Response message to " + player.getPlayerName() + ": " + responseMessage);
@@ -107,6 +124,11 @@ public class Server {
 //                    Changes the name of the player, to inform the opponent as well
                 jsonMessage.remove("opponent");
                 jsonMessage.addProperty("opponent", player.getPlayerName());
+                if (game.getTurn() == 1){
+                    jsonMessage.addProperty("turn", true);
+                }else{
+                    jsonMessage.addProperty("turn", false);
+                }
                 responseMessage = new Message(jsonMessage);
                 try {
                     opponent.getSession().getBasicRemote().sendObject(responseMessage);
@@ -118,15 +140,110 @@ public class Server {
                 }
                 
                 break;
+            case 3:
+                UUID gameId = UUID.fromString(json.get("gameId").getAsString());
+                game = gamesByUUID.get(gameId);
+                int score = json.get("indicator").getAsInt();
+                
+                game.setMoves(game.getMoves()+1);
+                if ( game.getPlayerName1() == player.getPlayerName() ){
+                    game.setScoreP1(game.getScoreP1()+score);
+                    opponent = playersByName.get( game.getPlayerName2() );
+                } else{
+                    game.setScoreP2(game.getScoreP2()+score);
+                    opponent = playersByName.get( game.getPlayerName1() );
+                }
+                
+                int result = game.checkWin();
+                switch(result){
+                    case 0:
+                        if (game.getTurn() == 1){
+                            game.setTurn(2);
+                        }else{
+                            game.setTurn(1);
+                        }
+                        
+                        jsonMessage = new JsonObject();
+                        jsonMessage.addProperty("action", "newMove");
+                        jsonMessage.addProperty("actionCode", 3);
+                        jsonMessage.addProperty("gameId", game.getGameId().toString());
+                        jsonMessage.addProperty("indicator", score);
+                        
+                        responseMessage = new Message(jsonMessage);
+                        try {
+                            opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                            log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                        } catch (IOException ex) {
+                            log.error(""+ex);
+                        } catch (EncodeException ex) {
+                            log.error(""+ex);
+                        }
+                        break;
+                    case 1:
+                        jsonMessage = new JsonObject();
+                        jsonMessage.addProperty("action", "youLose");
+                        jsonMessage.addProperty("actionCode", 4);
+                        jsonMessage.addProperty("gameId", game.getGameId().toString());
+                        jsonMessage.addProperty("indicator", score);
+                        
+                        responseMessage = new Message(jsonMessage);
+                        try {
+                            opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                            log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                        } catch (IOException ex) {
+                            log.error(""+ex);
+                        } catch (EncodeException ex) {
+                            log.error(""+ex);
+                        }
+                        
+                        jsonMessage.addProperty("action", "youWon");
+                        jsonMessage.addProperty("actionCode", 5);
+                        
+                        responseMessage = new Message(jsonMessage);
+                        try {
+                            player.getSession().getBasicRemote().sendObject(responseMessage);
+                            log.info("Response message to " + player.getPlayerName() + ": " + responseMessage);
+                        } catch (IOException ex) {
+                            log.error(""+ex);
+                        } catch (EncodeException ex) {
+                            log.error(""+ex);
+                        }
+                        break;
+                    case 2:
+                        jsonMessage = new JsonObject();
+                        jsonMessage.addProperty("action", "tiedBoring");
+                        jsonMessage.addProperty("actionCode", 6);
+                        jsonMessage.addProperty("gameId", game.getGameId().toString());
+                        jsonMessage.addProperty("indicator", score);
+                        
+                        responseMessage = new Message(jsonMessage);
+                        try {
+                            opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                            log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                        } catch (IOException ex) {
+                            log.error(""+ex);
+                        } catch (EncodeException ex) {
+                            log.error(""+ex);
+                        }
+                        try {
+                            player.getSession().getBasicRemote().sendObject(responseMessage);
+                            log.info("Response message to " + player.getPlayerName() + ": " + responseMessage);
+                        } catch (IOException ex) {
+                            log.error(""+ex);
+                        } catch (EncodeException ex) {
+                            log.error(""+ex);
+                        }
+                        break;
+                }
         }
-        
-//        sendMessageToAll(message);
     }
     
     @OnClose
     public void onClose(Session session){
         Player player = playersBySession.get(session.getId());
         updatePlayersLists(player, false);
+        
+        
         playersBySession.remove(session.getId());
         log.info("Session " + session.getId() + " has ended");
         log.info("Player " + player.getPlayerName() + " removed from list");

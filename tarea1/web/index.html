@@ -115,7 +115,7 @@
         <!-- Page Content -->
         <div class="container">
             <div class="row">
-                <div class="col-lg-2">
+<!--                <div class="col-lg-2">
                     <div>
                         <div>
                             <h2 id="playerNameLabel" class="h2"></h2>
@@ -124,14 +124,14 @@
                             <input type="text" class="form-control" placeholder="Message" id="messageinput">
                         </div>
                         <div class="btn-group">
-                            <!--<button type="button" class="btn btn-default" onclick="openSocket();">Open</button>-->
+                            <button type="button" class="btn btn-default" onclick="openSocket();">Open</button>
                             <button type="button" class="btn btn-default" onclick="sendText();" >Send</button>
                             <button type="button" class="btn btn-default" onclick="closeSocket();" >Close</button>
                         </div>
-                        <!-- Server responses get written here -->
+                         Server responses get written here 
                         <div id="messages"></div>
                     </div>
-                </div>
+                </div>-->
                 <!--Los juegos deben crearse dentro de este div-->
                 <div class="col-lg-7">
                     <!-- Nav tabs -->
@@ -142,7 +142,7 @@
                 </div>
                 <div class="col-lg-3">
                     <div class="panel panel-default">
-                        <div class="panel-heading">Players</div>
+                        <div class="panel-heading">Players<h2 id="playerNameLabel" class="h2"></h2></div>
                         <div class="panel-body">
                             <!--The names of available players get shown here-->
                             <div id="playersList" class="list-group"></div>
