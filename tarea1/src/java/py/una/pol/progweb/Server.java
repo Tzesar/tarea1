@@ -74,12 +74,18 @@ public class Server {
     @OnMessage
     public void onMessage(Message message, Session session){
         JsonObject json = message.getJson();
+        Integer actionCode = Integer.parseInt(json.get("actionCode").toString());
         
 //        String action = json.getString("action");
 //        TODO: falta implementar el switch segun el action
-        
-        log.info("Message from " + session.getId() + ": " + message);
-        sendMessageToAll(message);
+        switch(actionCode){
+            case 1:
+                
+                break;
+        }
+        Player player = playersBySession.get(session.getId());
+        log.info("Message from " + player.getPlayerName() + ": " + message);
+//        sendMessageToAll(message);
     }
     
     @OnClose

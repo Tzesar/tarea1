@@ -78,7 +78,13 @@ function createOnlinePlayer(playerName) {
     link.addClass("list-group-item player");
     link.dblclick(function(){
 //        Enviar mensaje para iniciar el juego, el servidor devuelve el ID del nuevo juego
-        createGameTab(playerName);
+        var message = {
+            action : "startNewGame",
+            actionCode : "1",
+            opponent : playerName
+        };
+        webSocket.send(JSON.stringify(message));
+//        createGameTab(playerName);
     });
     return link;
 }
