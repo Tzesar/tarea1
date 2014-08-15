@@ -59,7 +59,25 @@ function processMessage(message){
             removeOnLinePlayer(message.playerName);
         }
     } else if (message.action === "gameStarted"){
-        createGameTab(message.gameId, message.opponent);
+        createGameTab(message);
+    } else if (message.action === "newMove"){
+        var cell = $("#"+ message.gameId +"-"+message.indicator);
+        cell.closest("div").attr("turn", "true");
+        cell.html("O");
+    } else if(message.action === "youLose"){
+        var cell = $("#"+ message.gameId +"-"+message.indicator);
+        
+        cell.closest("div").attr("turn", "false");
+        cell.html("O");
+        
+        alert("Ha perdido la partida");
+    } else if(message.action === "youWon"){
+        var tab = $("#"+ message.gameId);
+        tab.attr("turn", "false");
+        
+        alert("Ha ganado la partida");
+    } else if(message.action === "tiedBoring"){
+        
     }
 }
 
@@ -82,7 +100,6 @@ function createOnlinePlayer(playerName) {
         };
         var json = JSON.stringify(message);
         webSocket.send(json);
-        alert("mensajeEnviado");
     });
     return link;
 }
@@ -91,9 +108,12 @@ function removeOnLinePlayer(playerName) {
     $('#' + playerName + '-player').remove();
 }
 
-function createGameTab(gameId, opponent) {
+function createGameTab(message) {
 //    <li id="playerName-game-link" class="active"><a href="#playerName-game" role="tab" data-toggle="tab">PlayerName</a></li>
 //    <div class="tab-pane active" id="playerName-game"></div>
+    var gameId = message.gameId;
+    var opponent = message.opponent;
+    var turn = message.turn;
     var link = $(document.createElement('li'));
     var a = $(document.createElement('a'));
     var closeButton = $(document.createElement('button'));
@@ -104,23 +124,24 @@ function createGameTab(gameId, opponent) {
     closeButton.html('x');
     closeButton.appendTo(a);
     
-    a.attr({href : "#" + gameId + "-game", role : "tab"});
+    a.attr({href : "#" + gameId, role : "tab"});
     a.attr("data-toggle","tab");
     a.append(opponent);
     
     link.attr({id: gameId + "-game-link"});
     
-    tab.attr({id: gameId + "-game"});
+    tab.attr({id: gameId});
     tab.attr("class", "tab-pane game");
+    tab.attr({turn: turn});
     
     a.appendTo(link);
     link.appendTo($("#listOfGames"));
     
 //        Si no existe ningun juego se marca al juego nuevo como activo
-    if (isEmpty($("#tabsOfGames"))){
-        link.attr("class", "active");
-        tab.attr("class", "active game");
-    }
+//    if (isEmpty($("#tabsOfGames"))){
+//        link.attr("class", "active");
+//        tab.attr("class", "active game");
+//    }
     
     var ticTacToeBoard = createTicTacToeBoard(gameId);
     
@@ -128,9 +149,13 @@ function createGameTab(gameId, opponent) {
     
     tab.appendTo($("#tabsOfGames"));
     
-    $('#'+ gameId +'-game a').click(function (e) {
+    $("div .active").removeClass("active");
+    $("li .active").removeClass("active");
+    $(tab+" a:last").tab("show");
+    
+    $('#'+ gameId +' a').click(function (e) {
         e.preventDefault();
-        $(this).tab('show');
+        tab.tab('show');
     });
 }
 
@@ -177,14 +202,14 @@ function createNewCell(indicator, gameId){
     cell.attr("id", gameId+"-"+indicator);
     cell.attr("indicator", indicator);
     cell.click( function(){
-        set(gameId+"-"+indicator);
+        set(gameId+"-"+indicator, gameId);
     });
     cell.append("");
     
     return cell;
 }
 
-function set(cellId){
+function set(cellId, gameId){
     var turn = "X";
     var cell = $("#"+cellId);
     
@@ -192,7 +217,22 @@ function set(cellId){
         alert("notEmpty");
         return;
     }
+    if( cell.closest("div").attr("turn") === "false"){
+        alert("No es tu turno");
+        return;
+    }
     cell.html(turn);
+    var message = {
+        action : "newMove",
+        actionCode : "3",
+        gameId: gameId,
+        indicator : cell.attr("indicator")
+    };
+    var json = JSON.stringify(message);
+    webSocket.send(json);
+    
+    cell.closest("div").attr("turn", "false");
+    
 //    moves += 1;
 //    score[turn] += this.indicator;
 //    if (win(score[turn])) {
@@ -202,7 +242,6 @@ function set(cellId){
 //        alert("Cat\u2019s game!");
 //        startNewGame();
 //    } else {
-        turn = turn === "X" ? "O" : "X";
 //    }
 }
 
