@@ -1,11 +1,14 @@
 var webSocket;
 var serverLocation = "ws://" + window.location.host + "/tarea1/echo/";
-var messages = document.getElementById("messages");
 
 //    actionCodes
 //    1 - Create new game
-//    2 = New move
-
+//    2 - New move
+//    3 - NewMove
+//    4 - youLose
+//    5 - youWon
+//    6 - TiedBoring
+//    7 - closeSession
 
 function openSocket() {
     // Ensures only one connection is open at a time
@@ -38,9 +41,16 @@ function openSocket() {
     };
 
     webSocket.onclose = function(event) {
-        messages.innerHTML += "<br/>" + "Connection closed";
+        alert("Se ha perdido conexion con el servidor");
+        
+        $("#listOfGames").empty();
+        $("#tabsOfGames").empty();
+        
+        $("#playButton").show();
+        $("#logOutButton").hide();
+        
         $('.player').remove();
-        $('#playerNameLabel').html("");
+        $('#playerNameLabel').empty();
     };
 }
 
@@ -82,6 +92,14 @@ function processMessage(message){
         cell.html("O");
         
         alert("Has empatado la partida. Esto es un tanto decepcionante.");
+    } else if(message.action === "playerWalkedOver"){
+        var gameTab = $("#"+message.gameId);
+        var gameLink = $("#"+message.gameId+"-game-link");
+        var opponent = message.opponent;
+        
+        alert("El usuario "+ opponent +" ha cerrado la partida.");
+        gameTab.remove();
+        gameLink.remove();
     }
 }
 
@@ -127,6 +145,9 @@ function createGameTab(message) {
     closeButton.attr("class", "close closeTab");
     closeButton.html('x');
     closeButton.appendTo(a);
+    closeButton.click( function(){
+       closeTab(gameId);
+    });
     
     a.attr({href : "#" + gameId, role : "tab"});
     a.attr("data-toggle","tab");
@@ -141,12 +162,6 @@ function createGameTab(message) {
     a.appendTo(link);
     link.appendTo($("#listOfGames"));
     
-//        Si no existe ningun juego se marca al juego nuevo como activo
-//    if (isEmpty($("#tabsOfGames"))){
-//        link.attr("class", "active");
-//        tab.attr("class", "active game");
-//    }
-    
     var ticTacToeBoard = createTicTacToeBoard(gameId);
     
     tab.append(ticTacToeBoard);
@@ -155,7 +170,7 @@ function createGameTab(message) {
     
     $("div .active").removeClass("active");
     $("li .active").removeClass("active");
-    $(gameId+" a:last").tab("show");
+    $("game a:last").tab("show");
     
     $('#'+ gameId +' a').click(function (e) {
         e.preventDefault();
@@ -167,10 +182,23 @@ function isEmpty( el ){
     return !$.trim(el.html()).length;
 }
 
+function closeTab(gameId){
+    var tab = $("#"+gameId);
+    var link = $("#"+gameId+"-game-link");
+    
+    var message = {
+        action : "gameFinished",
+        actionCode : "9",
+        gameId : gameId
+    };
+    var json = JSON.stringify(message);
+    webSocket.send(json);
+    
+    tab.remove();
+    link.remove();
+}
+
 function createTicTacToeBoard(gameId){
-//    var container = $(document.createElement("div"));
-//    var padLeft = $(document.createElement("div"));
-//    var padRight = $(document.createElement("div"));
     var board = $(document.createElement("table"));
     var indicator = 1;
     var i;
@@ -179,7 +207,6 @@ function createTicTacToeBoard(gameId){
     var cell;
     var parent;
     
-//    padLeft.attr("class", "col-lg-4");
     board.attr("border", "1");
     board.attr("class", "table");
     for (i = 0; i < 3; i += 1) {
@@ -236,56 +263,30 @@ function set(cellId, gameId){
     webSocket.send(json);
     
     cell.closest("div").attr("turn", "false");
-    
-//    moves += 1;
-//    score[turn] += this.indicator;
-//    if (win(score[turn])) {
-//        alert(turn + " wins!");
-//        startNewGame();
-//    } else if (moves === 9) {
-//        alert("Cat\u2019s game!");
-//        startNewGame();
-//    } else {
-//    }
-}
-
-/**
- * Sends the value of the text input to the server
- */
-function sendText(){
-    
-    var message = {
-        action: "sendChatMessage",
-        data: document.getElementById("messageinput").value
-    };
-    
-    var json = JSON.stringify(message);
-    webSocket.send(json);
 }
 
 function closeSocket() {
+    var openedGamesIds = [];
+    var openedGames = $(".game");
+    
+    openedGames.each( function(){
+       openedGamesIds.push( $(this).attr("id") );
+    });
+    
+    var message = {
+        action : "closeSession",
+        actionCode : "7",
+        games : openedGamesIds
+    };
+
+    var json = JSON.stringify(message);
+    webSocket.send(json);
+    
     webSocket.close();
     $("#tabsOfGames").empty();
     $("#listOfGames").empty();
     $("#playersList").empty();
     $("#playButton").show();
     $("#logOutButton").hide();
-}
-
-function writeResponse(json){
-    var response = JSON.parse(json);
-    var output;
-
-    // Determine the type of message recieved and handle accordingly
-    switch (response.action){
-        case "image":
-            output = "<img src=\'" + response.data + "\'/>";
-            break;
-        case "updateChat":
-            output = response.data;
-            break;
-    }
-
-    messages.innerHTML += "<br/>" + output;
 }
            
