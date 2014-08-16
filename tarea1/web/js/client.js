@@ -70,18 +70,18 @@ function processMessage(message){
         cell.closest("div").attr("turn", "false");
         cell.html("O");
         
-        alert("Ha perdido la partida");
+        bootbox.alert("Ha perdido la partida");
     } else if(message.action === "youWon"){
         var tab = $("#"+ message.gameId);
         tab.attr("turn", "false");
         
-        alert("Ha ganado la partida");
+        bootbox.alert("Ha ganado la partida");
     } else if(message.action === "tiedBoring"){
         var cell = $("#"+ message.gameId +"-"+message.indicator);
         cell.closest("div").attr("turn", "false");
         cell.html("O");
         
-        alert("Has empatado la partida. Esto es un tanto decepcionante.");
+        bootbox.alert("Has empatado la partida. Esto es un tanto decepcionante.");
     }
 }
 
@@ -218,11 +218,11 @@ function set(cellId, gameId){
     var cell = $("#"+cellId);
     
     if(!isEmpty(cell)){
-        alert("notEmpty");
+        //alert("notEmpty");
         return;
     }
     if( cell.closest("div").attr("turn") === "false"){
-        alert("No es tu turno");
+        bootbox.alert("No es tu turno");
         return;
     }
     cell.html(turn);
