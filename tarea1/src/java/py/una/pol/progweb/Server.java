@@ -4,6 +4,7 @@ package py.una.pol.progweb;
  * @author juan
  */
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -12,6 +13,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,12 +89,15 @@ public class Server {
         Player player = playersBySession.get(session.getId());
         
 //        actionCodes
-//        1 - New game
-//        2 - Game started
+//        1 - newGame
+//        2 - gameStarted
 //        3 - NewMove
 //        4 - youLose
 //        5 - youWon
 //        6 - TiedBoring
+//        7 - closeSession
+//        8 - playerWalkedOver
+//        9 - gameFinished
         log.info("Message from " + player.getPlayerName() + "["+ session.getId() +"]" + ": " + message + " code["+actionCode+"]");
         switch(actionCode){
             case 1:
@@ -235,6 +240,71 @@ public class Server {
                         }
                         break;
                 }
+                break;
+            case 7:
+                json = message.getJson();
+                Iterator<JsonElement> openedGames = json.get("games").getAsJsonArray().iterator();
+                
+                while( openedGames.hasNext() ){
+                    JsonElement openedGame = openedGames.next();
+                    gameId = UUID.fromString(openedGame.getAsString());
+                    game = gamesByUUID.get(gameId);
+                    
+                    if (game.getPlayerName1() != player.getPlayerName()){
+                        opponent = playersByName.get(game.getPlayerName1());
+                    } else {
+                        opponent = playersByName.get(game.getPlayerName2());
+                    }
+                    
+                    jsonMessage = new JsonObject();
+                    jsonMessage.addProperty("action", "playerWalkedOver");
+                    jsonMessage.addProperty("actionCode", 8);
+                    jsonMessage.addProperty("gameId", game.getGameId().toString());
+                    jsonMessage.addProperty("opponent", player.getPlayerName());
+
+                    responseMessage = new Message(jsonMessage);
+                    try {
+                        opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                        log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                    } catch (IOException ex) {
+                        log.error(""+ex);
+                    } catch (EncodeException ex) {
+                        log.error(""+ex);
+                    }
+                    
+                    gamesByUUID.remove(gameId);
+                }
+                break;
+            case 9:
+                json = message.getJson();
+                
+                gameId = UUID.fromString(json.get("gameId").getAsString());
+                game = gamesByUUID.get(gameId);
+
+                if (game.getPlayerName1() != player.getPlayerName()){
+                    opponent = playersByName.get(game.getPlayerName1());
+                } else {
+                    opponent = playersByName.get(game.getPlayerName2());
+                }
+
+                jsonMessage = new JsonObject();
+                jsonMessage.addProperty("action", "playerWalkedOver");
+                jsonMessage.addProperty("actionCode", 8);
+                jsonMessage.addProperty("gameId", game.getGameId().toString());
+                jsonMessage.addProperty("opponent", player.getPlayerName());
+
+                responseMessage = new Message(jsonMessage);
+                try {
+                    opponent.getSession().getBasicRemote().sendObject(responseMessage);
+                    log.info("Response message to " + opponent.getPlayerName() + ": " + responseMessage);
+                } catch (IOException ex) {
+                    log.error(""+ex);
+                } catch (EncodeException ex) {
+                    log.error(""+ex);
+                }
+
+                gamesByUUID.remove(gameId);
+                break;
         }
     }
     
